@@ -1,26 +1,42 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma, User } from '@prisma/client';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class UserService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
+    constructor(private readonly databaseService: DatabaseService) {}
 
-  findAll() {
-    return `This action returns all user`;
-  }
+    async create(userData: Prisma.UserCreateInput | Prisma.UserCreateInput[]): Promise<User | User[]> {
+        if (Array.isArray(userData)) {
+            return Promise.all(userData.map((data) => this.databaseService.user.create({ data })));
+        }
+        const existingUser = await this.databaseService.user.findFirst({ where: { OR: [{ email: userData.email }, { name: userData.name }] } });
+        if (existingUser) {
+            throw new BadRequestException(`User already exists with email: ${userData.email} or name: ${userData.name}`);
+        }
+        return this.databaseService.user.create({ data: userData });
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
+    async findAll(): Promise<User[]> {
+        return this.databaseService.user.findMany();
+    }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+    async findOne(id: number): Promise<User | null> {
+        return this.databaseService.user.findUnique({ where: { id } });
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+    async update(id: number, data: Prisma.UserUpdateInput): Promise<User> {
+        return this.databaseService.user.update({
+            where: { id },
+            data,
+        });
+    }
+
+    async remove(id: number): Promise<User> {
+        return this.databaseService.user.delete({ where: { id } });
+    }
+
+    async removeMany(ids: number[]): Promise<User[]> {
+        return Promise.all(ids.map((id) => this.databaseService.user.delete({ where: { id } })));
+    }
 }
