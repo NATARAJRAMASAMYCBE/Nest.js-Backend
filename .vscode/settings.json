@@ -24,5 +24,8 @@
         "source.organizeImports": "explicit"
     },
 
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "[prisma]": {
+        "editor.defaultFormatter": "Prisma.prisma"
+    }
 }
